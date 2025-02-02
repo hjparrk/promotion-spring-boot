@@ -32,7 +32,7 @@ public class CouponService {
     }
 
     @Transactional
-    public Coupon issueCoupon(CouponDto.IssueRequest request) {
+    public CouponDto.Response issueCoupon(CouponDto.IssueRequest request) {
         CouponPolicy couponPolicy = couponPolicyRepository.findByIdWithLock(request.getCouponPolicyId())
                 .orElseThrow(() -> new CouponIssueException("Coupon policy not found."));
 
@@ -54,25 +54,25 @@ public class CouponService {
                 .couponCode(couponCode)
                 .build();
 
-        return couponRepository.save(coupon);
+        return CouponDto.Response.from(couponRepository.save(coupon));
     }
 
     @Transactional
-    public Coupon useCoupon(Long couponId, Long orderId) {
+    public CouponDto.Response useCoupon(Long couponId, Long orderId) {
         Long userId = UserIdInterceptor.getCurrentUserId();
         Coupon coupon = couponRepository.findByIdAndUserId(couponId, userId)
                 .orElseThrow(() -> new CouponNotFoundException("Coupon not found or access denied."));
         coupon.use(orderId);
-        return coupon;
+        return CouponDto.Response.from(coupon);
     }
 
     @Transactional
-    public Coupon cancelCoupon(Long couponId) {
+    public CouponDto.Response cancelCoupon(Long couponId) {
         Long userId = UserIdInterceptor.getCurrentUserId();
         Coupon coupon = couponRepository.findByIdAndUserId(couponId, userId)
                 .orElseThrow(() -> new CouponNotFoundException("Coupon not found or access denied."));
         coupon.cancel();
-        return coupon;
+        return CouponDto.Response.from(coupon);
     }
 
     @Transactional(readOnly = true)
