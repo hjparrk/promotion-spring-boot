@@ -23,7 +23,7 @@ public class JWTService {
     public String generateToken(User user) {
         long currentTimeMillis = System.currentTimeMillis();
         return Jwts.builder()
-                .subject(user.getEmail())
+                .subject(user.getId().toString())
                 .claim("role", "USER")
                 .issuedAt(new Date(currentTimeMillis))
                 .expiration(new Date(currentTimeMillis + 3600000)) // Token expires in 1 hour

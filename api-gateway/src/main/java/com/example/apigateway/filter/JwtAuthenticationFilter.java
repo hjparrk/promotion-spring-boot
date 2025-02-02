@@ -1,5 +1,6 @@
 package com.example.apigateway.filter;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.client.loadbalancer.LoadBalanced;
 import org.springframework.cloud.client.loadbalancer.reactive.ReactorLoadBalancerExchangeFilterFunction;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
@@ -13,6 +14,7 @@ import reactor.core.publisher.Mono;
 
 import java.util.Map;
 
+@Slf4j
 @Component
 public class JwtAuthenticationFilter extends AbstractGatewayFilterFactory<JwtAuthenticationFilter.Config> {
 
@@ -55,7 +57,7 @@ public class JwtAuthenticationFilter extends AbstractGatewayFilterFactory<JwtAut
                 .header("Content-Type", "application/json")
                 .retrieve()
                 .bodyToMono(Map.class)
-                .map(response -> Integer.valueOf(response.get("id").toString()) );
+                .map(response -> Integer.valueOf(response.get("id").toString()));
     }
 
     private Mono<Void> proceedWithUserId(Integer userId, ServerWebExchange exchange, GatewayFilterChain chain) {
@@ -64,6 +66,6 @@ public class JwtAuthenticationFilter extends AbstractGatewayFilterFactory<JwtAut
     }
 
     public static class Config {
-        // 필터 구성을 위한 설정 클래스
+        // Filter Configuration Class
     }
 }

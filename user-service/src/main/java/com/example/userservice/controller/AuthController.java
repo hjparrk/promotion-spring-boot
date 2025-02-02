@@ -41,7 +41,7 @@ public class AuthController {
     ) {
         Claims claims = jwtService.validateToken(request.getToken());
         return ResponseEntity.ok(UserDto.TokenResponse.builder()
-                .email(claims.getSubject())
+                .id(claims.getSubject())
                 .valid(true)
                 .role(claims.get("role", String.class))
                 .build());
@@ -49,7 +49,8 @@ public class AuthController {
 
     @PostMapping("/refresh-token")
     public ResponseEntity<Map<String, String>> refreshToken(
-            @RequestBody UserDto.TokenRequest tokenRequest) {
+            @RequestBody UserDto.TokenRequest tokenRequest
+    ) {
         String newToken = jwtService.refreshToken(tokenRequest.getToken());
         return ResponseEntity.ok(Collections.singletonMap("token", newToken));
     }
