@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Coupon Service</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .container {
+            max-width: 800px;
+            margin-top: 50px;
+        }
+
+        .card {
+            margin-bottom: 20px;
+        }
+
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            display: none;
+        }
+
+        .success {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+
+        .error {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+
+        .nav-tabs {
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1 class="mb-4">Coupon Service</h1>
+    <ul class="nav nav-tabs">
+        <li class="nav-item">
+            <a class="nav-link active" href="/ui/coupons">Coupon Management</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="/ui/policies">Coupon Policies</a>
+        </li>
+    </ul>
+
+    <!-- Issue Coupon -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Issue Coupon</h5>
+        </div>
+        <div class="card-body">
+            <form id="issueForm">
+                <div class="mb-3">
+                    <label for="userId" class="form-label">User ID</label>
+                    <input type="number" class="form-control" id="userId" required>
+                </div>
+                <div class="mb-3">
+                    <label for="apiVersion" class="form-label">API Version</label>
+                    <select class="form-select" id="apiVersion" required>
+                        <option value="v1">v1</option>
+                        <option value="v2">v2</option>
+                        <option value="v3">v3</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="policyId" class="form-label">Coupon Policy</label>
+                    <select class="form-select" id="policyId" required>
+                        <option value="">Select</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary">Issue</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Use Coupon -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Use Coupon</h5>
+        </div>
+        <div class="card-body">
+            <form id="useForm">
+                <div class="mb-3">
+                    <label for="couponId" class="form-label">Coupon ID</label>
+                    <input type="text" class="form-control" id="couponId" required>
+                </div>
+                <div class="mb-3">
+                    <label for="orderId" class="form-label">Order ID</label>
+                    <input type="number" class="form-control" id="orderId" required>
+                </div>
+                <button type="submit" class="btn btn-success">Use</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Cancel Coupon -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Cancel Coupon</h5>
+        </div>
+        <div class="card-body">
+            <form id="cancelForm">
+                <div class="mb-3">
+                    <label for="cancelCouponId" class="form-label">Coupon ID</label>
+                    <input type="text" class="form-control" id="cancelCouponId" required>
+                </div>
+                <button type="submit" class="btn btn-danger">Cancel</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Result Display -->
+    <div id="result" class="result"></div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    let currentApiVersion = 'v1';
+    let lastUsedUserId = null;
+
+    function showResult(message, isSuccess) {
+        const resultDiv = $('#result');
+        resultDiv.removeClass('success error').addClass(isSuccess ? 'success' : 'error');
+        resultDiv.text(message).show();
+        setTimeout(() => resultDiv.fadeOut(), 5000);
+    }
+
+    function loadPolicies() {
+        fetch(`/api/${currentApiVersion}/coupon-policies`)
+            .then(response => response.json())
+            .then(policies => {
+                const select = $('#policyId');
+                select.empty().append('<option value="">Select</option>');
+                policies.forEach(policy => {
+                    select.append(`<option value="${policy.id}">${policy.name} (${policy.discountValue} discount)</option>`);
+                });
+            })
+            .catch(error => {
+                showResult('Failed to load coupon policies: ' + error.message, false);
+            });
+    }
+
+    function handleApiResponse(response) {
+        if (!response.ok) {
+            return response.text().then(text => {
+                throw new Error(text);
+            });
+        }
+        return response.json();
+    }
+
+    $(document).ready(function () {
+        loadPolicies();
+
+        $('#apiVersion').on('change', function () {
+            currentApiVersion = $(this).val();
+            loadPolicies();
+        });
+
+        $('#issueForm').on('submit', function (e) {
+            e.preventDefault();
+            const userId = parseInt($('#userId').val());
+            lastUsedUserId = userId;
+
+            fetch(`/api/${currentApiVersion}/coupons/issue`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-USER-ID' : userId
+                },
+                body: JSON.stringify({
+                    couponPolicyId: parseInt($('#policyId').val())
+                })
+            })
+                .then(handleApiResponse)
+                .then(data => {
+                    showResult(`Coupon issued successfully. (Coupon ID: ${data.couponId})`, true);
+                    $('#issueForm')[0].reset();
+                })
+                .catch(error => {
+                    showResult('Failed to issue coupon: ' + error.message, false);
+                });
+        });
+
+        $('#useForm').on('submit', function (e) {
+            e.preventDefault();
+            const couponId = $('#couponId').val();
+            const orderId = parseInt($('#orderId').val());
+            const url = `/api/${currentApiVersion}/coupons/${encodeURIComponent(couponId)}/use`;
+
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-USER-ID' : lastUsedUserId
+                },
+                body: JSON.stringify({orderId})
+            })
+                .then(handleApiResponse)
+                .then(data => {
+                    showResult('Coupon used successfully.', true);
+                    $('#useForm')[0].reset();
+                })
+                .catch(error => {
+                    showResult('Failed to use coupon: ' + error.message, false);
+                });
+        });
+
+        $('#cancelForm').on('submit', function (e) {
+            e.preventDefault();
+            const couponId = $('#cancelCouponId').val();
+            fetch(`/api/${currentApiVersion}/coupons/${encodeURIComponent(couponId)}/cancel`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-USER-ID' : lastUsedUserId
+                }
+            })
+                .then(handleApiResponse)
+                .then(data => {
+                    showResult('Coupon cancellation successful.', true);
+                    $('#cancelForm')[0].reset();
+                })
+                .catch(error => {
+                    showResult('Failed to cancel coupon: ' + error.message, false);
+                });
+        });
+    });
+</script>
+</body>
+</html>
