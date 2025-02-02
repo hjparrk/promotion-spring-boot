@@ -48,17 +48,17 @@ public class JwtAuthenticationFilter extends AbstractGatewayFilterFactory<JwtAut
         return exchange.getResponse().setComplete();
     }
 
-    private Mono<Long> validateToken(String token) {
+    private Mono<Integer> validateToken(String token) {
         return webClient.post()
                 .uri("/api/v1/users/validate-token")
                 .bodyValue("{\"token\":\"" + token + "\"}")
                 .header("Content-Type", "application/json")
                 .retrieve()
                 .bodyToMono(Map.class)
-                .map(response -> Long.valueOf(response.get("id").toString()) );
+                .map(response -> Integer.valueOf(response.get("id").toString()) );
     }
 
-    private Mono<Void> proceedWithUserId(Long userId, ServerWebExchange exchange, GatewayFilterChain chain) {
+    private Mono<Void> proceedWithUserId(Integer userId, ServerWebExchange exchange, GatewayFilterChain chain) {
         exchange.getRequest().mutate().header("X-USER-ID", String.valueOf(userId));
         return chain.filter(exchange);
     }
