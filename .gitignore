@@ -6,6 +6,7 @@ build/
 !**/src/test/**/build/
 **.yaml
 **.conf
+infrastructure
 
 ### STS ###
 .apt_generated
